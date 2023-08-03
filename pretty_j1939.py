@@ -49,53 +49,65 @@ parser.set_defaults(real_time=pretty_j1939.describe.DEFAULT_REAL_TIME)
 parser.add_argument('--format',    dest='format', action='store_true',  help='format each structure (otherwise '
                                                                              'single-line)')
 parser.add_argument('--no-format', dest='format', action='store_false', help='(default)')
+
+parser.add_argument('--live-can-data', dest='live_can_data', action='store_true', help='(default)')
 parser.set_defaults(format=False)
 
 
 args = parser.parse_args()
 
+def process_line(candump_line):
+    try:
+        message = candump_line.split()[2]
+        message_id = bitstring.ConstBitStream(hex=message.split('#')[0])
+        message_data = bitstring.ConstBitStream(hex=message.split('#')[1])
+    except (IndexError, ValueError):
+        print("Warning: error in line '%s'" % candump_line, file=sys.stderr)
+        return
+
+    desc_line = ''
+
+    description = describe(message_data.bytes, message_id.uint)
+    if args.format:
+        json_description = str(json.dumps(description, indent=4))
+    else:
+        json_description = str(json.dumps(description, separators=(',', ':')))
+    if len(description) > 0:
+        desc_line = desc_line + json_description
+
+    if args.candata:
+        can_line = candump_line.rstrip() + " ; "
+        if not args.format:
+            desc_line = can_line + desc_line
+        else:
+            formatted_lines = desc_line.splitlines()
+            if len(formatted_lines) == 0:
+                desc_line = can_line
+            else:
+                first_line = formatted_lines[0]
+                desc_line = can_line + first_line
+                formatted_lines.remove(first_line)
+
+            for line in formatted_lines:
+                desc_line = desc_line + '\n' + ' ' * len(candump_line) + "; " + line
+
+    if len(desc_line) > 0:
+        print(desc_line)
+
 
 def process_lines(candump_file):
     for candump_line in candump_file.readlines():
-        if candump_line == '\n':
+         if candump_line == '\n':
             continue
+    process_line(candump_line)
 
-        try:
-            message = candump_line.split()[2]
-            message_id = bitstring.ConstBitArray(hex=message.split('#')[0])
-            message_data = bitstring.ConstBitArray(hex=message.split('#')[1])
-        except (IndexError, ValueError):
-            print("Warning: error in line '%s'" % candump_line, file=sys.stderr)
-            continue
 
-        desc_line = ''
-
-        description = describe(message_data.bytes, message_id.uint)
-        if args.format:
-            json_description = str(json.dumps(description, indent=4))
-        else:
-            json_description = str(json.dumps(description, separators=(',', ':')))
-        if len(description) > 0:
-            desc_line = desc_line + json_description
-
-        if args.candata:
-            can_line = candump_line.rstrip() + " ; "
-            if not args.format:
-                desc_line = can_line + desc_line
-            else:
-                formatted_lines = desc_line.splitlines()
-                if len(formatted_lines) == 0:
-                    desc_line = can_line
-                else:
-                    first_line = formatted_lines[0]
-                    desc_line = can_line + first_line
-                    formatted_lines.remove(first_line)
-
-                for line in formatted_lines:
-                    desc_line = desc_line + '\n' + ' ' * len(candump_line) + "; " + line
-
-        if len(desc_line) > 0:
-            print(desc_line)
+def process_live_can_data():
+    while True:
+        output = sys.stdin.readline()
+        print(f'Processing: {output}')
+        if output:
+            process_line(output.strip())
 
 
 if __name__ == '__main__':
@@ -108,7 +120,10 @@ if __name__ == '__main__':
                                 real_time=args.real_time,
                                 include_transport_rawdata=args.candata,
                                 include_na=args.include_na)
-    if args.candump == '-':
+    
+    if args.live_can_data:
+        process_live_can_data()
+    elif args.candump == '-':
         f = sys.stdin
     else:
         f = open(args.candump, 'r')
