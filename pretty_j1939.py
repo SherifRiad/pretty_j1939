@@ -50,7 +50,7 @@ parser.add_argument('--format',    dest='format', action='store_true',  help='fo
                                                                              'single-line)')
 parser.add_argument('--no-format', dest='format', action='store_false', help='(default)')
 
-parser.add_argument('--live-can-data', dest='live_can_data', action='store_true', help='(default)')
+parser.add_argument('--live-can-data', dest='live_can_data', action='store_true', help='cmd | python3 pretty_j1939.py - --da-json J1939DA_MAY2023.json --live-can-data')
 parser.set_defaults(format=False)
 
 

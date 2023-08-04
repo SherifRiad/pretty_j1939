@@ -110,6 +110,11 @@ pretty_j1939.py example.candump.txt
 The `pretty_j1939.py` script (and the `describer` in `pretty_j1939/describe.py` that it builds-on) has various levels of
 verbosity available when describing J1939 traffic in candump logs:
 
+**Realtime CAN Data Decoding**
+```
+candump can0 -L | python3 pretty_j1939.py - --da-json J1939DA_MAY2023.json --live-can-data 
+```
+
 ```bash
 usage: pretty_j1939.py [-h] [--da-json [DA_JSON]] [--candata] [--no-candata] [--pgn] [--no-pgn] [--spn] [--no-spn] [--transport] [--no-transport]
                        [--link] [--no-link] [--include-na] [--no-include-na] [--real-time] [--no-real-time] [--format] [--no-format]
@@ -139,6 +144,7 @@ optional arguments:
   --no-real-time       (default)
   --format             format each structure (otherwise single-line)
   --no-format          (default)
+  --live-can-data      cmd | python3 pretty_j1939.py - --da-json J1939DA_MAY2023.json --live-can-data
 ```
 
 To use as a library one can import the pretty_j1939 modules class as `import pretty_j1939` and instantiate a `describer`
